@@ -13,7 +13,7 @@ E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 Alpha = 2.0 #Energy Distribution Parameter
 
 #DM
-M_DM = 2e03
+M_DM = 1e03
 E_max = 60e06
 
 #NFW Parameter

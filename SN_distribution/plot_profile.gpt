@@ -1,0 +1,9 @@
+set title "SN distribution profile"
+set xlabel "radius(pc)"
+set ylabel "density"
+set terminal png font " Times_New_Roman,12 "
+set output "SN_distribution.png"
+#set logscale xy
+plot \
+"profile.txt" using 1:2 with linespoints linewidth 2 , \
+#"AveParDens_final" using 1:3 with linespoints linewidth 2 title "final", \
