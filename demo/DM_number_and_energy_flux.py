@@ -26,22 +26,16 @@ t_burst = 10*3e10
 #cross section
 cs = 1e-30
 
+#SN
+Ri=1e7
 
 def DM_flux(m_dm,e_max,e_per_nu,alpha,start,end,n_total):
-    k = 1/(8*np.pi*m_dm)
-
-    
     L = (np.sum((start-end)**2))**0.5
     l = end -start
-    s1 = rho_s
-
-    
-    s2 = n_total/(4*np.pi*t_burst)
-    
     r=(np.sum((start)**2))**0.5
     x= r/rs
     
-    result = cs*k*s1*s2/(x*(1+x)*(1+x)) *( 1/1e7)
+    result = rho_s*n_total*cs/(x*(1+x)*(1+x)) /( 4*np.pi*m_dm*Ri)
 
     r_nu=n_total/(4*np.pi*L*L)
     print("DM Flux:"+str(result))

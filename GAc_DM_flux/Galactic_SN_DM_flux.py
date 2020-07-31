@@ -12,7 +12,7 @@ E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 Alpha = 2.0 #Energy Distribution Parameter
 
 #DM
-M_DM = 1e07
+M_DM = 1e03
 E_max = 60e06
 
 #NFW Parameter
@@ -23,7 +23,10 @@ rs=24.42*3.08567758e21
 t_burst = 10*3e10
 
 #cross section
-cs = 1e-40
+cs = 1e-30
+
+#SN
+Ri=1e7
 
 #Galactic Property
 Rd = 2.9e03#kpc
@@ -54,22 +57,16 @@ def GN_prob():
         #pos: Sun centric pos
         pos_GAC = np.array([-8.7e03,0,-24])
         d = pos - pos_GAC
-        dV = r2*np.sin(theta)/normalize_const
+        dV = r2*np.sin(theta)
         x= r_2(d)**0.5/r_s
         return np.exp(-R_2(d)**0.5/Rd)*np.exp(-np.abs(d[2])/H) *dV/(x*(1+x)*(1+x))
     return integrate.nquad(func, [[0,np.pi], [0,2*np.pi], [0,23e03]])[0]
 
 def DM_flux(m_dm,e_max,e_per_nu,alpha,start,end,n_total):
-    k = 1/(8*np.pi*m_dm)
-    s1 = rho_s
-
-    
-    s2 = n_total/(4*np.pi)
-    
     r=(np.sum((start)**2))**0.5
     x= r/rs
     
-    result = cs*k*s1*s2 *( 1/1e7) *6.68229
+    result = rho_s*n_total*cs /( 4*np.pi*m_dm*Ri)*6.68229
 
     print("DM Flux:"+str(result))
     
