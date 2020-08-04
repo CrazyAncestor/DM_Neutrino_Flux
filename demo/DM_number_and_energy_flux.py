@@ -29,7 +29,7 @@ cs = 1e-28
 #SN
 Ri=1e7
 
-def DM_flux(m_dm,e_max,e_per_nu,alpha,start,end,n_total):
+def DM_number(m_dm,e_max,e_per_nu,alpha,start,end,n_total):
     gamma = dmp.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
     beta = (1-gamma**(-2))**0.5
     time_delay = np.sum((start-end)**2)**0.5*(1/beta-1)/(3e10)
@@ -45,8 +45,8 @@ def DM_flux(m_dm,e_max,e_per_nu,alpha,start,end,n_total):
     
     phi_dm = integrate.nquad(f, [[0,1.]])[0]*k
     phi_nu = n_total/(4*np.pi*R*R)
-    print("DM Flux:"+str(phi_dm))
-    print("Neutrino Flux:"+str(phi_nu))
+    print("DM Number:"+str(phi_dm))
+    print("Neutrino Number:"+str(phi_nu))
     
 if __name__== '__main__':
     
@@ -56,7 +56,7 @@ if __name__== '__main__':
     start=np.array([1*3.08567758e21,0*3.08567758e21,0])
     end =np.array([10*3.08567758e21,0,0])
     
-    DM_flux(M_DM,E_max,E_per_nu ,Alpha,start,end,E_total_nu/E_per_nu)
+    DM_number(M_DM,E_max,E_per_nu ,Alpha,start,end,E_total_nu/E_per_nu)
 
     
     
