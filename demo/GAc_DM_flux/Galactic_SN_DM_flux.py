@@ -66,7 +66,7 @@ def DM_flux(m_dm,e_max,e_per_nu,alpha,start,end,n_total):
     r=(np.sum((start)**2))**0.5
     x= r/rs
     
-    result = rho_s*n_total*cs /( 4*np.pi*m_dm*Ri)*6.68229
+    result = rho_s*n_total*cs /( 4*np.pi*m_dm)*0.000488329 /3.08567758e21
 
     print("DM Flux:"+str(result))
     
