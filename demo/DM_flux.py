@@ -1,7 +1,7 @@
 ## This module aims to compute the number and energy flux of DM particles from a supernova
 import numpy as np
 import matplotlib.pyplot as plt
-import DM_p_distribution as dmp
+import Kinematics as kim
 import scipy.integrate as integrate
 
 
@@ -13,7 +13,7 @@ E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 Alpha = 2.0 #Energy Distribution Parameter
 
 #DM
-M_DM = 1e06
+M_DM = 10e06
 E_max = 60e06
 
 #NFW Parameter
@@ -30,7 +30,7 @@ cs = 1e-28
 Ri=1e7
 
 def DM_number(m_dm,e_max,e_per_nu,alpha,start,end,n_total):
-    gamma = dmp.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
+    gamma = kim.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
     beta = (1-gamma**(-2))**0.5
     time_delay = np.sum((start-end)**2)**0.5*(1/beta-1)/(3e10)
     print("time delay:"+str(time_delay))
@@ -41,11 +41,12 @@ def DM_number(m_dm,e_max,e_per_nu,alpha,start,end,n_total):
         r=(np.sum((start+l*t)**2))**0.5
         x= r/rs
         return 1/(x*(1+x)*(1+x))
-    k = n_total*rho_s*cs/m_dm/(4*np.pi*(R**2)) *R
+    k = n_total*rho_s*cs/m_dm/(4*np.pi) /R
     
     phi_dm = integrate.nquad(f, [[0,1.]])[0]*k
     phi_nu = n_total/(4*np.pi*R*R)
-    print("DM Number:"+str(phi_dm))
+    
+    print("DM Number(1/s*cm^2):"+str(phi_dm/(86400*36525)))
     print("Neutrino Number:"+str(phi_nu))
     
 if __name__== '__main__':
@@ -53,8 +54,8 @@ if __name__== '__main__':
     
     print("Total number of neutrino:"+str(E_total_nu/E_per_nu))
 
-    start=np.array([1*3.08567758e21,0*3.08567758e21,0])
-    end =np.array([10*3.08567758e21,0,0])
+    start=np.array([0.87*3.08567758e21,0,2.4*3.08567758e18])
+    end =np.array([8.7*3.08567758e21,0,24*3.08567758e18])
     
     DM_number(M_DM,E_max,E_per_nu ,Alpha,start,end,E_total_nu/E_per_nu)
 

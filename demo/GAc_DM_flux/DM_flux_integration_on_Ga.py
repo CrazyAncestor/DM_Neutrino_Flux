@@ -12,7 +12,7 @@ E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 Alpha = 2.0 #Energy Distribution Parameter
 
 #DM
-M_DM = 1e03
+M_DM = 10e06
 E_max = 60e06
 
 #NFW Parameter
@@ -23,7 +23,7 @@ rs=24.42*3.08567758e21
 t_burst = 10*3e10
 
 #cross section
-cs = 1e-30
+cs = 1e-28
 
 #SN
 Ri=1e7
@@ -63,12 +63,18 @@ def GN_prob():
     return integrate.nquad(func, [[0,np.pi], [0,2*np.pi], [0,23e03]])[0]
 
 def DM_flux(m_dm,e_max,e_per_nu,alpha,start,end,n_total):
-    r=(np.sum((start)**2))**0.5
-    x= r/rs
+    R = (np.sum((start-end)**2))**0.5
+    l = end -start
+    def f(t):
+        r=(np.sum((start+l*t)**2))**0.5
+        x= r/rs
+        return 1/(x*(1+x)*(1+x))
+    k = n_total*rho_s*cs/m_dm/(4*np.pi) /R
     
-    result = rho_s*n_total*cs /( 4*np.pi*m_dm)*0.000488329 /3.08567758e21
-
-    print("DM Flux:"+str(result))
+    result_spec = integrate.nquad(f, [[0,1.]])[0]*k
+    result_ave = rho_s*n_total*cs /( 4*np.pi*m_dm)* 0.000488329 /3.08567758e18
+    print("DM Flux(1/s*cm^2) SPEC:"+str(result_spec/(86400*36525)))
+    print("DM Flux(1/s*cm^2) AVE:"+str(result_ave/(86400*36525)))
     
     
 if __name__== '__main__':
@@ -76,8 +82,8 @@ if __name__== '__main__':
     
     print("Total number of neutrino:"+str(E_total_nu/E_per_nu))
 
-    start=np.array([1*3.08567758e21,0*3.08567758e21,0])
-    end =np.array([10*3.08567758e21,0,0])
+    start=np.array([0.87*3.08567758e21,0,2.4*3.08567758e18])
+    end =np.array([8.7*3.08567758e21,0,24*3.08567758e18])
     
     DM_flux(M_DM,E_max,E_per_nu ,Alpha,start,end,E_total_nu/E_per_nu)
 

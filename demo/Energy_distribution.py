@@ -1,7 +1,7 @@
 ## This module aims to compute the number and energy flux of DM particles from a supernova
 import numpy as np
 import matplotlib.pyplot as plt
-import DM_p_distribution as dmp
+import Kinematics as kim
 
 import scipy.optimize as opt
 
@@ -67,7 +67,7 @@ def f_evolution(m_dm,e_max,e_per_nu,alpha,start,end):
         return f_new
 
     def energy_conv(E):
-        return dmp.energy_kicked_by_neutrino(E,M_nu,m_dm)#E+m_dm-
+        return kim.energy_kicked_by_neutrino(E,M_nu,m_dm)#E+m_dm-
     
     def opacity(start,end,E,f):
         L = (np.sum((start-end)**2))**0.5

@@ -22,7 +22,7 @@ double Probability_unormalized (double *k, size_t dim, void *params)
   double theta = k[1];
   double phi = k[2];
 
-  double GAc[3]={-8.7e03,0,24};
+  double GAc[3]={-8.7e03,0,-24};
   double dx = r*sin(theta)*cos(phi)-GAc[0];
   double dy = r*sin(theta)*sin(phi)-GAc[1];
   double dz = r*cos(theta)         -GAc[2];
@@ -35,7 +35,7 @@ double Flux_SN (double t, void *params)
 {
   double* k =(double *) params;
 
-  double GAc[3]={-8.7e03,0,24};
+  double GAc[3]={-8.7e03,0,-24};
   double dx = k[0] *(1-t)-GAc[0];
   double dy = k[1] *(1-t)-GAc[1];
   double dz = k[2] *(1-t)-GAc[2];
@@ -66,7 +66,7 @@ double DM_flux_unormalized (double *k, size_t dim, void *params)
   double theta = k[1];
   double phi = k[2];
 
-  double GAc[3]={-8.7e03,0,24};
+  double GAc[3]={-8.7e03,0,-24};
   double dx = r*sin(theta)*cos(phi)-GAc[0];
   double dy = r*sin(theta)*sin(phi)-GAc[1];
   double dz = r*cos(theta)         -GAc[2];
@@ -108,8 +108,5 @@ int main()
   double xl[3] = { 0, 0 ,0};
   double xu[3] = {23e03, M_PI, M_PI*2 };
   cout<<"final result: "<<Monte_integration_3d(xl,xu, DM_flux_unormalized )/Monte_integration_3d(xl,xu, Probability_unormalized );
-  /*double xl[3] = {-0.1e03,0,24};
-  double xu[3] = { 0, 0 ,0};
-  cout<<"final result: "<<line_integration(xl, Flux_SN );*/
-
+  
 }
