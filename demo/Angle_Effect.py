@@ -13,7 +13,7 @@ E_total_nu = 1e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to 
 E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 
 #DM
-M_DM = 1e20
+M_DM = 1e07
 
 #NFW Parameter
 rho_s = 0.184e9
@@ -23,22 +23,23 @@ rs=24.42*3.08567758e21
 cs = 1e-28
 
 def angle_ratio(beta,r,R):
-    rp = R-r
+    
     def thet(psi):
         return psi-mt.asin(r*mt.sin(psi)/R)
     def f(theta):
+        rp = (R**2+r**2-2*R*r*mt.cos(theta))
         def psi(theta):
             return mt.atan(1/(1/(mt.tan(theta))-r/(R*mt.sin(theta))))
         def g(psi):
             x = mt.tan(psi)/((1-beta**2)**0.5)
             return 4*x/((1+x**2)**2) /(mt.sin(psi)*mt.cos(psi)*mt.cos(psi)) /((1-beta**2)**0.5)
 
-        return mt.sin(theta)*g(psi(theta))*mt.cos(psi(theta)-theta)
+        return mt.sin(theta)*g(psi(theta))*mt.cos(psi(theta)-theta)/(rp)
     
     psi_max = mt.atan((1-beta**2)**0.5)
     theta_max =thet(psi_max)
 
-    return integrate.nquad(f, [[0,theta_max]])[0]/(rp**2)
+    return integrate.nquad(f, [[0,theta_max]])[0]
 def norm(beta):
     
     
@@ -55,7 +56,7 @@ if __name__== '__main__':
     print("Angle Ratio:"+str(angle_ratio(beta,0.5,1)))
     print("Norm:"+str(norm(beta)))
 
-    r = np.linspace(0.001,0.9999,100)
+    r = np.linspace(0.001,0.9,100)
     ratio = []
     for i in range (len(r)):
         ratio.append(angle_ratio(beta,r[i],1))
