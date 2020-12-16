@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-M_nu = 0.32 # Unit:ev/c2
+M_nu = 0.32 # Unit:eV/c2
 def p_kicked_by_neutrino(E,m_nu,m_DM,n0):
     E = np.array(E)
     beta = (((E**2)-(m_nu**2))**0.5)/(E+m_DM)

@@ -1,14 +1,14 @@
 ## This module aims to compute the number and energy flux of DM particles from a supernova
 import numpy as np
 import matplotlib.pyplot as plt
-import Kinematics as kim
+from ..Step1_Kinematics import Kinematics
 import scipy.integrate as integrate
 
 
 #Particle Property
 #Neutrino
-M_nu = 0.32 # Unit:ev/c2
-E_total_nu = 1e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of MeV
+M_nu = 0.32 # Unit:eV/c2
+E_total_nu = 2e51*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of eV
 E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 
 #DM
@@ -22,7 +22,7 @@ rs=24.42*3.08567758e21
 cs = 1e-28
 
 def DM_flux(m_dm,e_per_nu,start,end,n_total):
-    gamma = kim.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
+    gamma = Kinematics.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
     beta = (1-gamma**(-2))**0.5
     R = (np.sum((start-end)**2))**0.5
     pos = -start+end
@@ -57,7 +57,7 @@ def DM_flux(m_dm,e_per_nu,start,end,n_total):
     
 
 def DM_number(m_dm,e_per_nu,start,end,n_total):
-    gamma = kim.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
+    gamma = Kinematics.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
     beta = (1-gamma**(-2))**0.5
     time_delay = np.sum((start-end)**2)**0.5*(1/beta-1)/(3e10)
     print("time delay:"+str(time_delay))
@@ -75,7 +75,7 @@ def DM_number(m_dm,e_per_nu,start,end,n_total):
     
     print("DM Number(1/s*cm^2):"+str(phi_dm/(86400*36525)))
     print("Neutrino Number:"+str(phi_nu))
-    
+"""
 if __name__== '__main__':
     
     
@@ -87,4 +87,4 @@ if __name__== '__main__':
     DM_number(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
     DM_flux(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
     
-    
+    """
