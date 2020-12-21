@@ -23,38 +23,49 @@ rs=24.42*3.08567758e21
 cs = 1e-28
 
 def angle_ratio(beta,r,R):
-    
-    def thet(psi):
-        return psi-mt.asin(r*mt.sin(psi)/R)
-    def f(theta):
-        rp = (R**2+r**2-2*R*r*mt.cos(theta))
-        def psi(theta):
-            return mt.atan(1/(1/(mt.tan(theta))-r/(R*mt.sin(theta))))
+    def f(psi):
+        rp = (R**2+r**2-2*R*r*mt.cos(psi))**0.5
+        cos_theta_psi = (rp**2+R**2-r**2)/(2*R*rp)
+        
         def g(psi):
-            x = mt.tan(psi)/((1-beta**2)**0.5)
-            return 4*x/((1+x**2)**2) /(mt.sin(psi)*mt.cos(psi)*mt.cos(psi)) /((1-beta**2)**0.5)
+            def theta(psi):
+                return mt.atan(1/(1/(mt.tan(psi))-r/(R*mt.sin(psi))))
+            
+            theta = theta(psi)
+            sec = 1/mt.cos(theta)
+            #return 1
+            return 4*mt.tan(theta)*(sec**2)*(1-beta*beta)/((sec**2-beta**2)**2)/mt.sin(theta)
+            # 
+            #return 4*x/((1+x**2)**2) /(mt.sin(theta)*mt.cos(theta)*mt.cos(theta)) /((1-beta**2)**0.5)
+            # #x = mt.tan(theta)/((1-beta**2)**0.5)
 
-        return mt.sin(theta)*g(psi(theta))*mt.cos(psi(theta)-theta)/(rp)
+        return mt.sin(psi)*g(psi)*cos_theta_psi/(rp**2)/2.
     
-    psi_max = mt.atan((1-beta**2)**0.5)
-    theta_max =thet(psi_max)
-
-    return integrate.nquad(f, [[0,theta_max]])[0]
+    theta_max = np.pi/2
+    def psi(theta):
+        return theta - mt.asin(r/R*mt.sin(theta))
+    psi_max = psi(theta_max)
+    #print(psi_max/np.pi)
+    #return integrate.nquad(f, [[0,np.pi]])[0]
+    return integrate.nquad(f, [[0,psi_max]])[0] 
 def norm(beta):
     
     
-    def g(psi):
-        x = mt.tan(psi)/((1-beta**2)**0.5)
-        return 4*x/((1+x**2)**2) /(mt.sin(psi)*mt.cos(psi)*mt.cos(psi)) /((1-beta**2)**0.5)
-    psi_max = mt.atan((1-beta**2)**0.5)
-    def f(psi):
-        return mt.sin(psi)*g(psi)
-    return integrate.nquad(f, [[0,psi_max]])[0]
+    def g(theta):
+        x = mt.tan(theta)/((1-beta**2)**0.5)
+        return 4*x/((1+x**2)**2) /(mt.sin(theta)*mt.cos(theta)*mt.cos(theta)) /((1-beta**2)**0.5)
+    theta_max = mt.atan((1-beta**2)**0.5)
+    def f(theta):
+        return mt.sin(theta)*g(theta)
+    return integrate.nquad(f, [[theta_max,np.pi]])[0]
 if __name__== '__main__':
     gamma = kim.energy_kicked_by_neutrino(E_per_nu, M_nu,M_DM)/M_DM
     beta = (1-gamma**(-2))**0.5
+    angle_ratio(beta,0.5,1)
+    
     print("Angle Ratio:"+str(angle_ratio(beta,0.5,1)))
     print("Norm:"+str(norm(beta)))
+    
 
     r = np.linspace(0.001,0.9,100)
     ratio = []
