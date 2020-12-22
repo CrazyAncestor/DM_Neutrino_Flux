@@ -8,18 +8,18 @@ import scipy.integrate as integrate
 #Particle Property
 #Neutrino
 M_nu = 0.32 # Unit:eV/c2
-E_total_nu = 2e51*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of eV
+E_total_nu = 3.6e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of eV
 E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 
 #DM
-M_DM = 10e06
+M_DM = 1e03
 
 #NFW Parameter
 rho_s = 0.184e9
 rs=24.42*3.08567758e21
 
 #cross section (Neutrino and DM)
-cs = 1e-28
+cs = 1e-30
 
 def DM_flux(m_dm,e_per_nu,start,end,n_total):
     gamma = Kinematics.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
@@ -47,7 +47,9 @@ def DM_flux(m_dm,e_per_nu,start,end,n_total):
         l = 3e10*(T - beta*t/(1-beta))
         l[-1]= 0.
         return n_ori(l)
-    phi = cs *n_total*rho_s/m_dm/(4*np.pi*(R**2))*n(t) *beta/(1-beta)
+    c = 3e10 #in unit of cm/s
+    phi = cs *n_total*rho_s/m_dm/(4*np.pi*(R**2))*n(t) *beta/(1-beta)*c
+
     plt.plot(t, phi, color ='blue', label = 'DM Flux')
     plt.xlabel('Time (s)')
     plt.ylabel('Flux (#/cm^2*s)')
@@ -70,21 +72,18 @@ def DM_number(m_dm,e_per_nu,start,end,n_total):
         return 1/(x*(1+x)*(1+x))
     k = n_total*rho_s*cs/m_dm/(4*np.pi) /R
     
-    phi_dm = integrate.nquad(f, [[0,1.]])[0]*k
-    phi_nu = n_total/(4*np.pi*R*R)
+    L_dm = integrate.nquad(f, [[0,1.]])[0]*k
+    L_nu = n_total/(4*np.pi*R*R)
     
-    print("DM Number(1/s*cm^2):"+str(phi_dm/(86400*36525)))
-    print("Neutrino Number:"+str(phi_nu))
-"""
+    print("DM Number(1/cm^2):"+str(L_dm))
+    print("Neutrino Number(1/cm^2):"+str(L_nu))
+
 if __name__== '__main__':
     
     
     print("Total number of neutrino:"+str(E_total_nu/E_per_nu))
-
     start=np.array([0.87*3.08567758e21,0,2.4*3.08567758e18])
     end =np.array([8.7*3.08567758e21,0,24*3.08567758e18])
     
     DM_number(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
     DM_flux(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
-    
-    """
