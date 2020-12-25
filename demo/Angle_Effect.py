@@ -9,23 +9,23 @@ import scipy.integrate as integrate
 #Particle Property
 #Neutrino
 M_nu = 0.32 # Unit:ev/c2
-E_total_nu = 1e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of MeV
+E_total_nu = 3.6e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of MeV
 E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 
 #DM
-M_DM = 1e07
+M_DM = 1e05
 
 #NFW Parameter
 rho_s = 0.184e9
 rs=24.42*3.08567758e21
 
 #cross section (Neutrino and DM)
-cs = 1e-28
+cs = 1e-30
 
-def angle_ratio(beta,r,R):
+def angle_norm(beta,r,R):
     def f(psi):
         rp = (R**2+r**2-2*R*r*mt.cos(psi))**0.5
-        cos_theta_psi = (rp**2+R**2-r**2)/(2*R*rp)
+        cos_theta_psi = ((R**2+(r*mt.cos(psi))**2-2*R*r*mt.cos(psi))/(R**2+r**2-2*R*r*mt.cos(psi)))**0.5#(rp**2+R**2-r**2)/(2*R*rp)
         
         def g(psi):
             def theta(psi):
@@ -33,49 +33,119 @@ def angle_ratio(beta,r,R):
             
             theta = theta(psi)
             sec = 1/mt.cos(theta)
-            #return 1
+            
             return 4*mt.tan(theta)*(sec**2)*(1-beta*beta)/((sec**2-beta**2)**2)/mt.sin(theta)
-            # 
-            #return 4*x/((1+x**2)**2) /(mt.sin(theta)*mt.cos(theta)*mt.cos(theta)) /((1-beta**2)**0.5)
-            # #x = mt.tan(theta)/((1-beta**2)**0.5)
-
         return mt.sin(psi)*g(psi)*cos_theta_psi/(rp**2)/2.
     
     theta_max = np.pi/2
     def psi(theta):
         return theta - mt.asin(r/R*mt.sin(theta))
     psi_max = psi(theta_max)
-    #print(psi_max/np.pi)
-    #return integrate.nquad(f, [[0,np.pi]])[0]
     return integrate.nquad(f, [[0,psi_max]])[0] 
-def norm(beta):
-    
-    
-    def g(theta):
-        x = mt.tan(theta)/((1-beta**2)**0.5)
-        return 4*x/((1+x**2)**2) /(mt.sin(theta)*mt.cos(theta)*mt.cos(theta)) /((1-beta**2)**0.5)
-    theta_max = mt.atan((1-beta**2)**0.5)
-    def f(theta):
-        return mt.sin(theta)*g(theta)
-    return integrate.nquad(f, [[theta_max,np.pi]])[0]
-if __name__== '__main__':
-    gamma = kim.energy_kicked_by_neutrino(E_per_nu, M_nu,M_DM)/M_DM
+
+def DM_number(m_dm,e_per_nu,start,end,n_total):
+    gamma = Kinematics.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
     beta = (1-gamma**(-2))**0.5
-    angle_ratio(beta,0.5,1)
+    time_delay = np.sum((start-end)**2)**0.5*(1/beta-1)/(3e10)
+    #print("time delay:"+str(time_delay))
+
+    R = (np.sum((start-end)**2))**0.5
+    l = end -start
+    def f(psi,r):
+        
+        x=(np.sum((start + np.array([r*mt.cos(psi),0,r*mt.sin(psi)]))**2))**0.5/rs
+        cos_theta_psi=((R**2+(r*mt.cos(psi))**2-2*R*r*mt.cos(psi))/(R**2+r**2-2*R*r*mt.cos(psi)))**0.5
+        theta = mt.atan(1/(1/(mt.tan(psi))-r/(R*mt.sin(psi))))
+        sec = 1/mt.cos(theta)
+        dn_domega= (sec**3)*(1-beta*beta)/((sec**2-beta**2)**2)/np.pi
+        
+        return mt.sin(psi)*cos_theta_psi /(R**2+r**2-2*R*r*mt.cos(psi))*dn_domega/(x*(1+x)*(1+x))
+        
+    k = n_total*rho_s*cs/m_dm/(4*np.pi)
     
-    print("Angle Ratio:"+str(angle_ratio(beta,0.5,1)))
-    print("Norm:"+str(norm(beta)))
+    L_dm = integrate.dblquad(f, 0, R, lambda r: 0, lambda r: np.pi/2.-mt.asin(r/R))[0]*2*np.pi*k
+    print("DM Number(1/cm^2):"+str(L_dm))
     
 
-    r = np.linspace(0.001,0.9,100)
-    ratio = []
-    for i in range (len(r)):
-        ratio.append(angle_ratio(beta,r[i],1))
-    ratio = np.array(ratio)
-    plt.plot(r, ratio, color ='blue', label = 'Angle ratio')
-    plt.xlabel('Distance (0 starts from SN, and 1 ends at the earth)')
-    plt.ylabel('Ratio ')
-    #plt.legend(loc='upper right')
-    plt.savefig("Angle.png")
+def DM_number_original(m_dm,e_per_nu,start,end,n_total):
+    gamma = Kinematics.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
+    beta = (1-gamma**(-2))**0.5
+    time_delay = np.sum((start-end)**2)**0.5*(1/beta-1)/(3e10)
+    
+
+    R = (np.sum((start-end)**2))**0.5
+    l = end -start
+    def f(t):
+        r=(np.sum((start+l*t)**2))**0.5
+        x= r/rs
+        return 1/(x*(1+x)*(1+x))
+    k = n_total*rho_s*cs/m_dm/(4*np.pi) /R
+    
+    L_dm = integrate.nquad(f, [[0,1.]])[0]*k
+    print("DM Number original(1/cm^2):"+str(L_dm))
+    
+
+def Spectrum(m_dm,e_per_nu,start,end,n_total):
+    gamma = Kinematics.energy_kicked_by_neutrino(E_per_nu, M_nu,m_dm)/m_dm
+    beta = (1-gamma**(-2))**0.5
+    time_delay = np.sum((start-end)**2)**0.5*(1/beta-1)/(3e10)
+    #print("time delay:"+str(time_delay))
+
+    R = (np.sum((start-end)**2))**0.5
+    l = end -start
+    def dL_dEdR(r,theta):
+        #theta = mt.acos((E/ (M_DM/(1-beta**2)) -1)/(beta**2))
+        dE_dtheta = M_DM *(beta**2)*mt.sin(theta)/(1-beta**2)
+        def f(r):
+            psi = theta - mt.asin(r/R*mt.sin(theta))
+            x=(np.sum((start + np.array([r*mt.cos(psi),0,r*mt.sin(psi)]))**2))**0.5/rs
+            cos_theta_psi= mt.cos(theta-psi)
+            sec = 1/mt.cos(theta)
+            dpsi_dtheta = 1- r/R*mt.cos(theta) /(1-(r/R*mt.sin(theta))**2)**0.5
+            dn_domega= (sec**3)*(1-beta*beta)/((sec**2-beta**2)**2)/np.pi
+        
+            return mt.sin(psi)*cos_theta_psi*R /(R**2+r**2-2*R*r*mt.cos(psi))*dn_domega*dpsi_dtheta/(x*(1+x)*(1+x))
+        return  f(r)#/dE_dtheta #integrate.nquad(f, [[0,R]])[0]  /dE_dtheta
+
+    E_0 = M_DM*1.001
+    E_f = M_DM/(1-beta**2)*(1+(beta**2))*0.999
+    norm = integrate.dblquad(dL_dEdR, 0, np.pi/2, lambda theta: 0, lambda theta: R)[0]*2*np.pi  
+
+    def dL_dE(theta):
+        #theta = mt.acos((E/ (M_DM/(1-beta**2)) -1)/(beta**2))
+        sec = 1/mt.cos(theta)
+        dE_dtheta = M_DM *(beta**2)/(1-beta**2) *4*(gamma**2)*mt.tan(theta)*(sec**2) /(1+(gamma**2)*(mt.tan(theta)**2))
+        def f(r):
+            psi = theta - mt.asin(r/R*mt.sin(theta))
+            x=(np.sum((start + np.array([r*mt.cos(psi),0,r*mt.sin(psi)]))**2))**0.5/rs
+            cos_theta_psi= mt.cos(theta-psi)
+            sec = 1/mt.cos(theta)
+            dpsi_dtheta = 1- r/R*mt.cos(theta) /(1-(r/R*mt.sin(theta))**2)**0.5
+            dn_domega= (sec**3)*(1-beta*beta)/((sec**2-beta**2)**2)/np.pi
+        
+            return mt.sin(psi)*cos_theta_psi*R /(R**2+r**2-2*R*r*mt.cos(psi))*dn_domega*dpsi_dtheta/(x*(1+x)*(1+x))
+        return  integrate.nquad(f, [[0,R]])[0]  /dE_dtheta
+
+    theta =np.linspace(0.001,np.pi/2,1000)
+    E = [M_DM/(1-beta**2)*(1+(beta**2)*np.cos(theta[i]))for i in range(0,1000)]
+    spec = [dL_dE(theta[i])/norm for i in range(0,1000)]
+   
+    plt.plot(E, spec, color ='blue')
+    plt.xlabel('E(eV)')
+    plt.ylabel('dL_chi/dE(1/cm**2 eV)')
+    plt.legend(loc='upper right')
     plt.show()
-    print(ratio)
+    
+
+if __name__== '__main__':
+    gamma = Kinematics.energy_kicked_by_neutrino(E_per_nu, M_nu,M_DM)/M_DM
+    beta = (1-gamma**(-2))**0.5    
+    print("Angle Norm:"+str(angle_norm(beta,0.5,1)))
+
+    start=np.array([0.87*3.08567758e21,0,2.4*3.08567758e18])
+    end =np.array([8.7*3.08567758e21,0,24*3.08567758e18])
+    
+    DM_number(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
+
+    DM_number_original(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
+    Spectrum(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
