@@ -13,7 +13,7 @@ E_total_nu = 3.6e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg t
 E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 
 #DM
-M_DM = 1e05
+M_DM = 1e03
 
 #NFW Parameter
 rho_s = 0.184e9
