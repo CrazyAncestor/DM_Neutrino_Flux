@@ -7,7 +7,7 @@ import scipy.integrate as integrate
 #Particle Property
 #Neutrino
 M_nu = 0.32 # Unit:ev/c2
-E_total_nu = 1e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of MeV
+E_total_nu = 3.6e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of MeV
 E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 
 #DM
@@ -18,7 +18,7 @@ rho_s = 0.184e9
 rs=24.42*3.08567758e21
 
 #cross section (Neutrino and DM)
-cs = 1e-28
+cs = 1e-30
 
 
 #Galactic Property  (ref: ADAMS, SCOTT et al. arXiv:1306.0559 [astro-ph.HE])

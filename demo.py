@@ -4,18 +4,18 @@ import Steps.Step2_DM_Flux.DM_flux as DM
 #Particle Property
 #Neutrino
 M_nu = 0.32 # Unit:eV/c2
-E_total_nu = 2e51*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of eV
+E_total_nu = 3.6e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of eV
 E_per_nu = 10e6 #Mean energy of each neutrino in eV #estimated value
 
 #DM
-M_DM = 10e06 #eV
+M_DM = 1e03 #eV
 
 #NFW Parameter
 rho_s = 0.184e9 #eV/cm^3
 rs=24.42*3.08567758e21 #in cm
 
 #cross section (Neutrino and DM)
-cs = 1e-28
+cs = 1e-30
 
 if __name__== '__main__':
     
