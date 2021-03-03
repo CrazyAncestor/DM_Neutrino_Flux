@@ -8,18 +8,19 @@ import scipy.integrate as integrate
 #Particle Property
 #Neutrino
 M_nu = 0.32 # Unit:ev/c2
-E_total_nu = 1e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of MeV
+E_total_nu = 3.6e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg to unit of MeV
 E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 
 #DM
-M_DM = 1e03
+M_DM_light = 1e03
+M_DM_heavy = 1e07
 
 #NFW Parameter
 rho_s = 0.184e9
 rs=24.42*3.08567758e21
 
 #cross section (Neutrino and DM)
-cs = 1e-28
+cs = 1e-30
 
 Alpha = 3.
 
@@ -47,7 +48,8 @@ def Standard_DM_flux(m_dm,e_per_nu,start,end,n_total,beta):
         l = 3e10*(T - beta*t/(1-beta))
         l[-1]= 0.
         return n_ori(l)
-    phi = cs *n_total*rho_s/m_dm/(4*np.pi*(R**2))*n(t) *beta/(1-beta)
+    c = 3e10 #in unit of cm/s
+    phi = cs *n_total*rho_s/m_dm/(4*np.pi*(R**2))*n(t) *beta/(1-beta)*c
     return t,phi
 
 
@@ -64,7 +66,7 @@ def Smeared_DM_flux(m_dm,e_per_nu,start,end,n_total,beta,alpha):
     delta_E = E_DM_ave - m_dm
     def phi_E(tp):
         def dphi_de(E):
-            beta_E = (1-(M_DM/E)**2)**0.5
+            beta_E = (1-(m_dm/E)**2)**0.5
             def f_energy_nu(E):
                 e  = np.array(E)/E_DM_ave
                 return (e**alpha)*np.exp(-(alpha+1)*e)
@@ -89,7 +91,8 @@ def Smeared_DM_flux(m_dm,e_per_nu,start,end,n_total,beta,alpha):
         scope = [E_DM_ave-delta_E,E_DM_ave+100*delta_E]
         result = integrate.nquad(dphi_de, [scope])[0]
         basis = integrate.nquad(base, [scope])[0]
-        k = cs *n_total*rho_s/m_dm/(4*np.pi*(R**2))
+        c = 3e10 #in unit of cm/s
+        k = cs *n_total*rho_s/m_dm/(4*np.pi*(R**2))*c
         return k*result/basis
     
     phi=[]
@@ -100,25 +103,33 @@ def Smeared_DM_flux(m_dm,e_per_nu,start,end,n_total,beta,alpha):
     return t,phi
     
 if __name__== '__main__':
-    gamma = kim.energy_kicked_by_neutrino(E_per_nu, M_nu,M_DM)/M_DM
-    beta = (1-gamma**(-2))**0.5
+    gamma_light = kim.energy_kicked_by_neutrino(E_per_nu, M_nu,M_DM_light)/M_DM_light
+    beta_light = (1-gamma_light**(-2))**0.5
+
+    gamma_heavy = kim.energy_kicked_by_neutrino(E_per_nu, M_nu,M_DM_heavy)/M_DM_heavy
+    beta_heavy = (1-gamma_heavy**(-2))**0.5
     
     print("Total number of neutrino:"+str(E_total_nu/E_per_nu))
 
     start=np.array([0.87*3.08567758e21,0,2.4*3.08567758e18])
     end =np.array([8.7*3.08567758e21,0,24*3.08567758e18])
     
-    t_std,phi_std = Standard_DM_flux(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu,beta)
-    t_smr,phi_smr = Smeared_DM_flux(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu,beta,Alpha)
+    t_light,phi_light = Smeared_DM_flux(M_DM_light,E_per_nu ,start,end,E_total_nu/E_per_nu,beta_light,Alpha)
+    #t_heavy,phi_heavy = Smeared_DM_flux(M_DM_heavy,E_per_nu ,start,end,E_total_nu/E_per_nu,beta_heavy,Alpha)
+    t_std,phi_std = Standard_DM_flux(M_DM_light,E_per_nu ,start,end,E_total_nu/E_per_nu,beta_light)
     
-    plt.plot(t_std, phi_std, color ='blue', label = 'One Energy DM Flux')
-    plt.plot(t_smr, phi_smr, color ='red', label = 'Distributed Energy DM Flux')
+    
+    plt.plot(t_std, phi_std, color ='red', label = 'One Energy DM Flux')
+    
+    plt.plot(t_light, phi_light, color ='blue', label = '1keV DM')
+    #plt.plot(t_heavy, phi_heavy, color ='red', label = '10MeV DM')
     plt.xlabel('Time (s)')
     plt.ylabel('Flux (#/cm^2*s)')
     plt.legend(loc='upper right')
     plt.savefig("KeV1.png")
     plt.show()
 
-    print(np.sum(phi_std)*(t_std[-1]-t_std[0]))
-    print(np.sum(phi_smr)*(t_smr[-1]-t_smr[0]))
+    
+    
+
     
