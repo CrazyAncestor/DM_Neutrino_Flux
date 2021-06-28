@@ -2,18 +2,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-M_nu = 0.32 # Unit:ev/c2
+M_nu = 0.32 # Unit:eV/c2
 def p_kicked_by_neutrino(E,m_nu,m_DM,n0):
     E = np.array(E)
     beta = (((E**2)-(m_nu**2))**0.5)/(E+m_DM)
     b = beta/(1-beta**2)
-    return 1.5*m_DM*np.tensordot(b,n0,axes=0) 
+    return m_DM*np.tensordot(b,n0,axes=0) 
 
 def energy_kicked_by_neutrino(E,m_nu,m_DM):
     E = np.array(E)
     beta = (((E**2)-(m_nu**2))**0.5)/(E+m_DM)
     
-    return (1+beta**2/2)*m_DM/(1-beta**2)
+    return m_DM/(1-beta**2)
 
 if __name__== '__main__':
     M_DM = 1e07
