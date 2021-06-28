@@ -13,7 +13,7 @@ E_total_nu = 3.6e53*6.24150913e11 #Total energy of neutrinos #Transfer 2e51erg t
 E_per_nu = 10e6 #Mean energy of each neutrino #estimated value
 
 #DM
-M_DM = 1e03
+M_DM = 1e07
 
 #NFW Parameter
 rho_s = 0.184e9
@@ -65,6 +65,7 @@ def DM_number(m_dm,e_per_nu,start,end,n_total):
     k = n_total*rho_s*cs/m_dm/(4*np.pi)
     result =integrate.dblquad(f, 0, np.pi/2., lambda theta: 0, lambda theta: R)
     print(result[1])
+    
     L_dm = result[0]*2*np.pi*k/R
     print("DM Number(1/cm^2):"+str(L_dm))
     
@@ -77,13 +78,14 @@ def DM_number_original(m_dm,e_per_nu,start,end,n_total):
 
     R = (np.sum((start-end)**2))**0.5
     l = end -start
-    def f(t):
-        r=(np.sum((start+l*t)**2))**0.5
-        x= r/rs
-        return 1/(x*(1+x)*(1+x))
-    k = n_total*rho_s*cs/m_dm/(4*np.pi) /R
+    def rho(t):
+        r = np.sum((start+t*l)**2)**0.5
+        x = r/rs
+        return rho_s/(x*(1+x)*(1+x)) *R
+    k = n_total/(4*np.pi)  /(R**2)*cs/m_dm 
+    print(k)
     
-    L_dm = integrate.nquad(f, [[0,1.]])[0]*k
+    L_dm = integrate.nquad(rho, [[0.0,1.]])[0]*k
     print("DM Number original(1/cm^2):"+str(L_dm))
     
 
@@ -146,13 +148,13 @@ if __name__== '__main__':
     
     beta = (E_per_nu**2- M_nu**2)**0.5/(E_per_nu+M_DM)
     gamma = (1-beta**(2))**0.5      
-    print(beta)
-    print("Angle Norm:"+str(angle_norm(beta,0.5,1)))
+    #print(beta)
+    #print("Angle Norm:"+str(angle_norm(beta,0.5,1)))
 
-    start=np.array([0.87*3.08567758e21,0,2.4*3.08567758e18])
-    end =np.array([8.7*3.08567758e21,0,24*3.08567758e18])
+    start=np.array([0.87*3.08567758e21,0,0*3.08567758e18])
+    end =np.array([8.7*3.08567758e21,0,0*3.08567758e18])
     
     DM_number(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
 
     DM_number_original(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
-    Spectrum(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
+    #Spectrum(M_DM,E_per_nu ,start,end,E_total_nu/E_per_nu)
