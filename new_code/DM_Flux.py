@@ -2,6 +2,7 @@ import numpy as np
 import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 from scipy.optimize import root_scalar
+import scipy.optimize as opt
 # Global constants
 # light speed, cm
 c = 3*1e10
@@ -36,11 +37,26 @@ def g(alpha, Ev,mx):
     # Artificial Criterium 1
     # Avoid Backward Scattering
 
-    if alpha<np.pi/2 and alpha>=1e-6: 
+    if alpha<np.pi/2: 
         #return np.sin(2*np.arctan(gamma*np.tan(alpha)))*gamma*(sec**2)/(1 + gamma**2*(np.tan(alpha)**2))/(2*np.pi*np.sin(alpha))
         return sec**3/np.pi*(1-beta**2)/(sec**2-beta**2)**2
     else:
+        #print(alpha/np.pi*180)
+        return 0#sec**3/np.pi*(1-beta**2)/(sec**2-beta**2)**2
+
+def g_new(alpha, Ev,mx):
+    gamma = Gamma_Ev(Ev,mx)
+    beta = 1/(1-gamma**(-2))**(-0.5)
+    sec = 1/np.cos(alpha)
+
+    # Artificial Criterium 1
+    # Avoid Backward Scattering
+
+    if alpha<(np.pi/1.25): 
+        return sec**3/np.pi*(1-beta**2)/(sec**2-beta**2)**2
+    else:
         return 0
+
 # Second Part: NFW Number Density Function. n_chi(r,mx)
 def n_chi(r,mx):
     x = r/Rs
@@ -58,7 +74,7 @@ def dnv_dEv(r,Ev):
     nueb_dist = fv(Ev,4.01)/16
     # total 4 species for x
     nux_dist = fv(Ev,6.26)/25
-
+    
     return L*(nue_dist+nueb_dist+4*nux_dist)
 
 
@@ -134,22 +150,6 @@ def j(r,Ev,alpha,mx):
 
 
 
-def dbdmflux_dEv(t,R,Ev,mx):
-    tau  = 10.
-    t = t+R/c
-    def j_base(cos):
-        Tchi = 2*Ev**2/(mx+2*Ev) *(1-cos)/2.
-        vx = (Tchi*(Tchi + 2*mx))**0.5/(Tchi+mx) *c # Natural Unit
-        l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
-
-        if(Flag==False):
-            return 0
-        else:
-            return vx *cs *n_chi(r,mx) *dnv_dEv(r,Ev) *g(alpha,Ev,mx)
-
-    result = 2*np.pi*c*tau*integrate.quad(j_base,0,1)[0]*kpc2cm
-    return result
-
 def dbdmflux_dTx(t,R,Tx,mx):
     tau  = 10.
     t = t+R/c
@@ -163,13 +163,13 @@ def dbdmflux_dTx(t,R,Tx,mx):
         else:
             return vx *cs *n_chi(r,mx) *dnv_dEv(r,Ev) *g(alpha,Ev,mx)*dEv_dTx
         
-    result = 2*np.pi*c*tau*integrate.quad(j_base,0,1)[0]*kpc2cm
-    print(result)
+    result = 2*np.pi*c*tau*integrate.quad(j_base,0,1)[0]
+    
     return result
 
-def bdmflux(t,R,Tx,mx):
+def dbdmflux_dTx_ori(t,R,Tx,mx):
     tau  = 10.
-    t = t+R/c
+    t = t + R/c
     vx = (Tx*(Tx + 2*mx))**0.5/(Tx+mx) *c # Natural Unit
     def j_base(cos):
         l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
@@ -181,8 +181,124 @@ def bdmflux(t,R,Tx,mx):
         else:
             return vx *cs *n_chi(r,mx) *dnv_dEv(r,Ev_in) *g(alpha,Ev_in,mx) *dEv_dTx
 
-    result = 2*np.pi*vx*tau*integrate.quad(j_base,0,1)[0]*kpc2cm
+    result = 2*np.pi*vx*tau*integrate.quad(j_base,0,1)[0]
     return result
+
+def bdmflux(t,R,mx):
+    def f(Tx):
+        return dbdmflux_dTx(t,R,Tx,mx)
+    result = integrate.quad(f,0,100)[0]
+    print(result)
+    return result
+
+def check_bdmflux(t,R,Tx,mx):
+    tau  = 10.
+    t = t + R/c
+    vx = (Tx*(Tx + 2*mx))**0.5/(Tx+mx) *c # Natural Unit
+
+    def f(cos):
+        l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
+        return alpha-np.pi/2
+    root = opt.fsolve(f, [0.5])
+    
+    def j_base(cos):
+        l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
+        
+        Ev_in = _Ev(Tx,mx,alpha)
+        dEv_dTx = dEvdTx(Tx,mx,alpha)
+        if(Flag==False):
+            return 0
+        else:
+            return vx *cs *n_chi(r,mx) *dnv_dEv(r,Ev_in)  *dEv_dTx *g(alpha,Ev_in,mx)
+
+    result = 2*np.pi*vx*tau*integrate.quad(j_base,root,1)[0]*kpc2cm
+    l,r,alpha,Flag = Root_Finding(root,t,vx,R)
+    Ev_in = _Ev(Tx,mx,alpha)
+    return result
+    #return np.arccos(root)/np.pi*180
+    #return dEvdTx(Tx,mx,alpha)
+    #return vx *cs *n_chi(r,mx) *dnv_dEv(r,Ev_in) *g(alpha,Ev_in,mx) *dEv_dTx
+
+def check_bdmflux_new(t,R,Tx,mx):
+    tau  = 10.
+    t = t + R/c
+    vx = (Tx*(Tx + 2*mx))**0.5/(Tx+mx) *c # Natural Unit
+
+    def f(cos):
+        l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
+        return alpha-np.pi/2
+    root = opt.fsolve(f, [0.5])
+    
+    def j_base(cos):
+        l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
+        
+        Ev_in = _Ev(Tx,mx,alpha)
+        dEv_dTx = dEvdTx(Tx,mx,alpha)
+        if(Flag==False):
+            return 0
+        else:
+            return vx *cs *n_chi(r,mx) *dnv_dEv(r,Ev_in)  *dEv_dTx *g_new(alpha,Ev_in,mx)
+
+    result = 2*np.pi*vx*tau*integrate.quad(j_base,root,1)[0]*kpc2cm
+    l,r,alpha,Flag = Root_Finding(root,t,vx,R)
+    Ev_in = _Ev(Tx,mx,alpha)
+    return result
+
+def check_g(cos,t,R,Tx,mx):
+    tau  = 10.
+    t = t + R/c
+    vx = (Tx*(Tx + 2*mx))**0.5/(Tx+mx) *c # Natural Unit
+
+    l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
+    Ev_in = _Ev(Tx,mx,alpha)
+    #return alpha/np.pi*180
+    #return g(alpha,Ev_in,mx)
+
+    def f(cos):
+        l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
+        return alpha-np.pi/2
+    root = opt.fsolve(f, [0.5])
+    
+    l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
+    dEv_dTx = dEvdTx(Tx,mx,alpha)
+    Ev_in = _Ev(Tx,mx,alpha)
+
+    if root>cos:
+        return 0
+    return g(alpha,Ev_in,mx)
+    return g(alpha,Ev_in,mx)
+    #return np.arccos(root)/np.pi*180
+    #return dEvdTx(Tx,mx,alpha)
+    #return vx *cs *n_chi(r,mx) *dnv_dEv(r,Ev_in) *g(alpha,Ev_in,mx) *dEv_dTx
+
+def check_others(cos,t,R,Tx,mx):
+    tau  = 10.
+    t = t + R/c
+    vx = (Tx*(Tx + 2*mx))**0.5/(Tx+mx) *c # Natural Unit
+
+    l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
+    Ev_in = _Ev(Tx,mx,alpha)
+    #return alpha
+    #return g(alpha,Ev_in,mx)
+
+    def f(cos):
+        l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
+        return alpha-np.pi/2
+    root = opt.fsolve(f, [0.5])
+    
+    l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
+    dEv_dTx = dEvdTx(Tx,mx,alpha)
+    Ev_in = _Ev(Tx,mx,alpha)
+
+    if root>cos:
+        return 0
+    return n_chi(r,mx) *dnv_dEv(r,Ev_in) *dEv_dTx#*g(alpha,Ev_in,mx)
+    return g(alpha,Ev_in,mx)
+    #return np.arccos(root)/np.pi*180
+    #return dEvdTx(Tx,mx,alpha)
+    #return vx *cs *n_chi(r,mx) *dnv_dEv(r,Ev_in) *g(alpha,Ev_in,mx) *dEv_dTx
+
+
 
 def dNum_dTx(R,Tx,mx):
     tau  = 10.
@@ -225,7 +341,7 @@ def dNum_dTx_Single(R,Tx,mx):
 
 
 # Main
-
+mode = 'total_flux'
 # All in MeV
 mx1 = 0.01
 mx2 = 0.1
@@ -234,49 +350,124 @@ Tx = 10
 
 R = 8.7*kpc2cm
 
-# years
-yrls=np.logspace(0,5,200)
+if mode=='flux':
+    # years
+    yrls=np.logspace(0,4,200)
 
-fluxmx1=[]
-for y in yrls:
-    fluxmx1.append(dbdmflux_dTx(y*yr,R ,10.,mx1))
+    fluxmx1=[]
+    for y in yrls:
+        fluxmx1.append(dbdmflux_dTx(y*yr,R ,10.,mx1))
 
-fluxmx2=[]
-for y in yrls:
-    fluxmx2.append(dbdmflux_dTx(y*yr,R ,10.,mx2))
+    fluxmx2=[]
+    for y in yrls:
+        fluxmx2.append(dbdmflux_dTx(y*yr,R ,10.,mx2))
     
-fluxmx3=[]
-for y in yrls:
-    fluxmx3.append(dbdmflux_dTx(y*yr,R ,10.,mx3))
+    fluxmx3=[]
+    for y in yrls:
+        fluxmx3.append(dbdmflux_dTx(y*yr,R ,10.,mx3))
 
-plt.plot(yrls,fluxmx1,label='$m_\chi=0.01$ MeV')
-plt.plot(yrls,fluxmx2,label='$m_\chi=0.1$ MeV')
-plt.plot(yrls,fluxmx3,label='$m_\chi=1$ MeV')
-plt.xscale('log')
-plt.yscale('log')
-plt.xlabel('yr')
-plt.ylabel(r'$d\Phi^N/dT_\chi$')
-plt.title(r'$T_\chi = 10\,{\rm MeV}$')
-plt.legend(loc='best')
-plt.ylim(1,500)
-plt.show()
+    plt.plot(yrls,fluxmx1,label='$m_\chi=0.01$ MeV')
+    plt.plot(yrls,fluxmx2,label='$m_\chi=0.1$ MeV')
+    plt.plot(yrls,fluxmx3,label='$m_\chi=1$ MeV')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel('yr')
+    plt.ylabel(r'$d\Phi^N/dT_\chi$')
+    plt.title(r'$T_\chi = 10\,{\rm MeV}$')
+    plt.legend(loc='best')
+    #plt.ylim(1,500)
+    plt.show()
 
-"""R = 8.7*kpc2cm
-dNum_dTx(R,10,1)
+elif mode=='total_flux':
+    # years
+    yrls=np.logspace(0,4,200)
 
-# Tx
-Tx = np.logspace(-4,1,200)
-DMnum=[]
-for y in Tx:
-    DMnum.append(dNum_dTx_Single(R,y,300))
+    fluxmx1=[]
+    for y in yrls:
+        fluxmx1.append(bdmflux(y*yr,R ,0.001))#1keV
 
-plt.plot(Tx*1e3,DMnum)
+    """fluxmx2=[]
+    for y in yrls:
+        fluxmx2.append(bdmflux(y*yr,R ,mx2))
+    
+    fluxmx3=[]
+    for y in yrls:
+        fluxmx3.append(bdmflux(y*yr,R ,mx3))"""
 
-plt.xscale('log')
-plt.yscale('log')
-plt.xlabel('Tx(keV)')
-plt.ylabel(r'$T_\chi d\Phi^N/dT_\chi(cm^-2 s^-1)$')
-plt.title(r'$m_\chi=300$ MeV')
+    plt.plot(yrls,fluxmx1,label='$m_\chi=1$ keV')
+    #plt.plot(yrls,fluxmx2,label='$m_\chi=0.1$ MeV')
+    #plt.plot(yrls,fluxmx3,label='$m_\chi=1$ MeV')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel('yr')
+    plt.ylabel(r'$Phi^N(1/cm^2/s)$')
+    plt.title(r'$T_\chi = 1\,{\rm keV}$')
+    plt.legend(loc='best')
+    #plt.ylim(1,500)
+    plt.show()
 
-#plt.ylim(1,500)
-plt.show()"""
+elif mode=='num':
+    # Tx
+    Tx = np.logspace(-4,1,200)
+    DMnum=[]
+    for y in Tx:
+        DMnum.append(dNum_dTx_Single(R,y,300))
+
+    plt.plot(Tx*1e3,DMnum)
+
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel('Tx(keV)')
+    plt.ylabel(r'$T_\chi d\Phi^N/dT_\chi(cm^-2 s^-1)$')
+    plt.title(r'$m_\chi=300$ MeV')
+
+    #plt.ylim(1,500)
+    plt.show()
+
+elif mode=='check':
+    yrls=np.logspace(3,4,200)
+    #yrls = np.linspace(0,1.,200)
+    theta=[]
+    comp = []
+
+    for y in yrls:
+        theta.append(check_bdmflux(y*yr,R,10.,1.))
+        
+        if(y<3000 and y>2900):
+            comp.append(30)
+        else:
+            comp.append(0)
+        #comp.append(check_bdmflux_new(y*yr,R,10.,1.))
+        #theta.append(check_g(y,2800*yr,R,10.,1.))
+    plt.plot(yrls,theta)
+    plt.plot(yrls,comp)
+    plt.xscale('log')
+    plt.yscale('log')
+    #plt.xlabel('yr')
+    
+   
+    plt.legend(loc='best')
+
+    plt.show()
+
+elif mode=='check_g':
+    #yrls=np.logspace(0,4,2000)
+    yrls = np.linspace(0,1.,200)
+    theta=[]
+    comp=[]
+    
+    for y in yrls:
+        #theta.append(check_bdmflux(y*yr,R,10.,1.))
+        theta.append(check_g(y,1380*yr,R,10.,1.))
+        comp.append(check_others(y,1380*yr,R,10.,1.)/80000)
+    plt.plot(yrls,theta,label = 'g')
+    plt.plot(yrls,comp,label = 'f')
+    #plt.xscale('log')
+    #plt.yscale('log')
+    plt.xlabel('cos theta')
+    #plt.ylabel('alpha(degree)')
+    
+   
+    plt.legend(loc='best')
+
+    plt.show()
