@@ -25,7 +25,7 @@ Lnu = 1e52*erg2MeV
 R = 8.7*kpc2cm
 
 # Cross Section
-cs = 1e-45
+cs = 1e-30
 
 # First Part: Find g(alpha,Ev,mx)
 def Gamma_Ev(Ev,mx):
@@ -85,13 +85,9 @@ def _Ev(Tx,mx,alpha):
     Output
     Ev: the corresponding neutrino energy
     """
-    if alpha==0:
-        return Tx+0.5*(Tx**2+2*Tx*mx)**0.5
-
-    Ev = -2*mx + Tx + np.sqrt((2*mx + Tx)**2 + 8*mx*Tx*np.tan(alpha)**(-2)) \
-            + np.sqrt(2*Tx*(2*mx + Tx + 4*mx*np.tan(alpha)**(-2)+   \
-                    + np.sqrt((2*mx + Tx)**2 + 8*mx*Tx*np.tan(alpha)**(-2))))
-    return Ev/4
+    sec = 1/np.cos(alpha)
+    enu = (Tx*sec**2 + sec*np.sqrt(Tx*(2*mx + Tx)))/(2 - Tx*np.tan(alpha)**2/mx)
+    return enu
 
 def dEvdTx(Tx,mx,alpha):
     """
@@ -108,13 +104,10 @@ def dEvdTx(Tx,mx,alpha):
     ------
     tuple: dEv/dTx
     """
-    if alpha==0:
-        return 1+0.5*(Tx+mx)/(Tx**2+2*Tx*mx)**0.5
-    v1 = 4*mx*Tx + 8*mx*Tx*np.tan(alpha)**(-2)
-    v2 = np.sqrt((2*mx + Tx)**2 + 8*mx*Tx*np.tan(alpha)**(-2))
-    v3 = 2*Tx + np.sqrt(2*Tx*(2*mx + Tx + 4*mx*np.tan(alpha)**(-2) + v2))
-    v4 = 8*Tx*v2
-    return (v1 + (Tx + v2)*v3)/v4
+    sec = 1/np.cos(alpha)
+    numerator = mx**2*sec*(2*sec*np.sqrt(Tx*(2*mx + Tx)) + 2*mx + Tx*sec**2 + Tx)
+    denominator = (Tx*np.tan(alpha)**2 - 2*mx)**2*np.sqrt(Tx*(2*mx + Tx))
+    return numerator/denominator
 
 # Fifth Part: Root Finding Fuction of alpha, r when cos, t, and vx are given. Root_Finding(cos, t,vx,R)
 def Root_Finding(cos, t,vx,R = 8.5):
@@ -147,42 +140,57 @@ def dbdmflux_dTx(t,R,Tx,mx):
         l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
         Ev = _Ev(Tx,mx,alpha)
         dEv_dTx = dEvdTx(Tx,mx,alpha)
+
+        if Tx >= 2*mx/np.tan(alpha)**2:   
+            return 0 
+
         if(Flag==False):
             return 0
         else:
             return vx *cs *n_chi(r,mx,model_type) *dnv_dEv(r,Ev) *g(alpha,Ev,mx)*dEv_dTx
-        
-    result = 2*np.pi*c*tau*integrate.quad(j_base,0,1)[0]
+    result = integrate.quad(j_base,0,0.5)[0]+integrate.quad(j_base,0.5,0.8)[0]+integrate.quad(j_base,0.8,0.9)[0]+integrate.quad(j_base,0.9,0.99)[0]\
+    +integrate.quad(j_base,0.99,0.999)[0]+integrate.quad(j_base,0.999,0.9999)[0]\
+    +integrate.quad(j_base,0.9999,0.99999)[0]+integrate.quad(j_base,0.99999,0.999999)[0]\
+    +integrate.quad(j_base,0.999999,0.9999999)[0]+integrate.quad(j_base,0.9999999,1)[0]
+    result *= 2*np.pi*c*tau
     
     return result
 
 def bdmflux(t,R,mx):
     def f(Tx):
         return dbdmflux_dTx(t,R,Tx,mx)
-    result = integrate.quad(f,0,100)[0]
+    result = integrate.quad(f,0.9,1)[0]
     print(result)
     return result
 
 def dNum_dTx(R,Tx,mx):
     tau  = 10.
     vx = (Tx*(Tx + 2*mx))**0.5/(Tx+mx) *c # Natural Unit
-    fix = 1e-45
+    fix = 1e-50
     def f_base(cos,r):
         sin_theta = (1.-cos*cos)**0.5
         alpha = np.arcsin(sin_theta/r*R)
         Ev = _Ev(Tx,mx,alpha)
         dEv_dTx = dEvdTx(Tx,mx,alpha)
         #print(alpha, Ev,dEv_dTx)
+        if Tx >= 2*mx/np.tan(alpha)**2:   
+            return 0 
+
         if np.isnan(alpha) or np.isnan(Ev) or np.isnan(dEv_dTx):
             return 0
-        return vx/c  *fix*n_chi(r,mx,model_type) *dnv_dEv(r,Ev) *g(alpha,Ev,mx)*dEv_dTx
+        return vx *cs  *fix*n_chi(r,mx,model_type) *dnv_dEv(r,Ev) *g(alpha,Ev,mx)*dEv_dTx
 
     def integral(r):
-        return integrate.quad(f_base,0,1,args=(r))[0]
+        result = integrate.quad(f_base,0,0.5,args=(r))[0]+integrate.quad(f_base,0.5,0.8,args=(r))[0]+integrate.quad(f_base,0.8,0.9,args=(r))[0]+integrate.quad(f_base,0.9,0.99,args=(r))[0]\
+        +integrate.quad(f_base,0.99,0.999,args=(r))[0]+integrate.quad(f_base,0.999,0.9999,args=(r))[0]\
+        +integrate.quad(f_base,0.9999,0.99999,args=(r))[0]+integrate.quad(f_base,0.99999,0.999999,args=(r))[0]\
+        +integrate.quad(f_base,0.999999,0.9999999,args=(r))[0]+integrate.quad(f_base,0.9999999,1,args=(r))[0]
+        
+        return result
 
 
     result = integrate.quad(integral, 0,R)[0]/fix
-    result *= 2*np.pi*tau *Tx*cs      
+    result *= 2*np.pi*tau *Tx     
     print(result)
     return result
 
@@ -193,44 +201,51 @@ def dNum_dTx_Single(R,Tx,mx):
         Ev = _Ev(Tx,mx,0)
         dEv_dTx = dEvdTx(Tx,mx,0)
         if  np.isnan(Ev) or np.isnan(dEv_dTx):
-            print(Ev,dEv_dTx)
             return 0
         return n_chi(r,mx,model_type) *dnv_dEv(r,Ev) *dEv_dTx*(r**2)/(R**2)
 
     result = integrate.quad(f_base, 0.01*R,R)[0]
-    result *= 2*np.pi*tau *Tx*cs      
-    print(result)
+    result *= 2*np.pi *Tx*cs*c*tau      
+    #print(result)
     return result
 
+def dNum_dTx_Single_num(R,mx):
+    def f(Tx):
+        return dNum_dTx_Single(R,Tx,mx)
+    result = integrate.quad(f,0,10)[0]
+
+    return result
+
+
 # Main
-mode = 'flux'
+mode = 'num'
 # All in MeV
 mx1 = 0.01
 mx2 = 0.1
-mx3 = 1
+mx3 = 300
 Tx = 10
 
 
 
 if mode=='flux':
     # years
-    yrls=np.logspace(0,4,200)
+    yrls=np.logspace(-1,7,200)
 
-    fluxmx1=[]
+    """fluxmx1=[]
     for y in yrls:
         fluxmx1.append(dbdmflux_dTx(y*yr,R ,10.,mx1))
 
     fluxmx2=[]
     for y in yrls:
-        fluxmx2.append(dbdmflux_dTx(y*yr,R ,10.,mx2))
+        fluxmx2.append(dbdmflux_dTx(y*yr,R ,10.,mx2))"""
     
     fluxmx3=[]
     for y in yrls:
         fluxmx3.append(dbdmflux_dTx(y*yr,R ,10.,mx3))
 
-    plt.plot(yrls,fluxmx1,label='$m_\chi=0.01$ MeV')
-    plt.plot(yrls,fluxmx2,label='$m_\chi=0.1$ MeV')
-    plt.plot(yrls,fluxmx3,label='$m_\chi=1$ MeV')
+    #plt.plot(yrls,fluxmx1,label='$m_\chi=0.01$ MeV')
+    #plt.plot(yrls,fluxmx2,label='$m_\chi=0.1$ MeV')
+    plt.plot(yrls,fluxmx3,label='$m_\chi=300$ MeV')
     plt.xscale('log')
     plt.yscale('log')
     plt.xlabel('time(yr)')
@@ -246,7 +261,7 @@ elif mode=='total_flux':
 
     fluxmx1=[]
     for y in yrls:
-        fluxmx1.append(bdmflux(y*yr,R ,0.001))# mx = 1keV
+        fluxmx1.append(bdmflux(y*yr,R ,1e-3))# mx = 1keV
 
     plt.plot(yrls,fluxmx1,label='$m_\chi=1$ keV')
     plt.xscale('log')
@@ -259,13 +274,16 @@ elif mode=='total_flux':
 
 elif mode=='num':
     # Tx
-    Tx = np.logspace(-4,1,200)
-    DMnum=[]
+    Tx = np.logspace(-4,2,200)
+    mx = 300
+    DMnum_single=[]
+    DMnum_multi=[]
     for y in Tx:
-        DMnum.append(dNum_dTx_Single(R,y,300))
+        DMnum_single.append(dNum_dTx_Single(R,y,300))
+        DMnum_multi.append(dNum_dTx(R,y,300))
 
-    plt.plot(Tx*1e3,DMnum)
-
+    plt.plot(Tx*1e3,DMnum_multi,label='multiple direction')
+    plt.plot(Tx*1e3,DMnum_single,label='single direction')
     plt.xscale('log')
     plt.yscale('log')
     plt.xlabel('Tx(keV)')
@@ -273,4 +291,6 @@ elif mode=='num':
     plt.title(r'$m_\chi=300$ MeV')
 
     plt.show()
+elif mode=='total_num':
 
+    print(dNum_dTx_Single_num(R,300))

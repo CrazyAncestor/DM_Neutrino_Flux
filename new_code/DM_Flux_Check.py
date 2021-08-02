@@ -99,13 +99,9 @@ def _Ev(Tx,mx,alpha):
     Output
     Ev: the corresponding neutrino energy
     """
-    if alpha==0:
-        return Tx+0.5*(Tx**2+2*Tx*mx)**0.5
-
-    Ev = -2*mx + Tx + np.sqrt((2*mx + Tx)**2 + 8*mx*Tx*np.tan(alpha)**(-2)) \
-            + np.sqrt(2*Tx*(2*mx + Tx + 4*mx*np.tan(alpha)**(-2)+   \
-                    + np.sqrt((2*mx + Tx)**2 + 8*mx*Tx*np.tan(alpha)**(-2))))
-    return Ev/4
+    sec = 1/np.cos(alpha)
+    enu = (Tx*sec**2 + sec*np.sqrt(Tx*(2*mx + Tx)))/(2 - Tx*np.tan(alpha)**2/mx)
+    return enu
 
 def dEvdTx(Tx,mx,alpha):
     """
@@ -122,13 +118,10 @@ def dEvdTx(Tx,mx,alpha):
     ------
     tuple: dEv/dTx
     """
-    if alpha==0:
-        return 1+0.5*(Tx+mx)/(Tx**2+2*Tx*mx)**0.5
-    v1 = 4*mx*Tx + 8*mx*Tx*np.tan(alpha)**(-2)
-    v2 = np.sqrt((2*mx + Tx)**2 + 8*mx*Tx*np.tan(alpha)**(-2))
-    v3 = 2*Tx + np.sqrt(2*Tx*(2*mx + Tx + 4*mx*np.tan(alpha)**(-2) + v2))
-    v4 = 8*Tx*v2
-    return (v1 + (Tx + v2)*v3)/v4
+    sec = 1/np.cos(alpha)
+    numerator = mx**2*sec*(2*sec*np.sqrt(Tx*(2*mx + Tx)) + 2*mx + Tx*sec**2 + Tx)
+    denominator = (Tx*np.tan(alpha)**2 - 2*mx)**2*np.sqrt(Tx*(2*mx + Tx))
+    return numerator/denominator
 
 # Fifth Part: Root Finding Fuction of alpha, r when cos, t, and vx are given. Root_Finding(cos, t,vx,R)
 def Root_Finding(cos, t,vx,R = 8.5):

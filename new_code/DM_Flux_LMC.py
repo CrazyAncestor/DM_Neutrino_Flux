@@ -90,13 +90,9 @@ def _Ev(Tx,mx,alpha):
     Output
     Ev: the corresponding neutrino energy
     """
-    if alpha==0:
-        return Tx+0.5*(Tx**2+2*Tx*mx)**0.5
-
-    Ev = -2*mx + Tx + np.sqrt((2*mx + Tx)**2 + 8*mx*Tx*np.tan(alpha)**(-2)) \
-            + np.sqrt(2*Tx*(2*mx + Tx + 4*mx*np.tan(alpha)**(-2)+   \
-                    + np.sqrt((2*mx + Tx)**2 + 8*mx*Tx*np.tan(alpha)**(-2))))
-    return Ev/4
+    sec = 1/np.cos(alpha)
+    enu = (Tx*sec**2 + sec*np.sqrt(Tx*(2*mx + Tx)))/(2 - Tx*np.tan(alpha)**2/mx)
+    return enu
 
 def dEvdTx(Tx,mx,alpha):
     """
@@ -113,13 +109,10 @@ def dEvdTx(Tx,mx,alpha):
     ------
     tuple: dEv/dTx
     """
-    if alpha==0:
-        return 1+0.5*(Tx+mx)/(Tx**2+2*Tx*mx)**0.5
-    v1 = 4*mx*Tx + 8*mx*Tx*np.tan(alpha)**(-2)
-    v2 = np.sqrt((2*mx + Tx)**2 + 8*mx*Tx*np.tan(alpha)**(-2))
-    v3 = 2*Tx + np.sqrt(2*Tx*(2*mx + Tx + 4*mx*np.tan(alpha)**(-2) + v2))
-    v4 = 8*Tx*v2
-    return (v1 + (Tx + v2)*v3)/v4
+    sec = 1/np.cos(alpha)
+    numerator = mx**2*sec*(2*sec*np.sqrt(Tx*(2*mx + Tx)) + 2*mx + Tx*sec**2 + Tx)
+    denominator = (Tx*np.tan(alpha)**2 - 2*mx)**2*np.sqrt(Tx*(2*mx + Tx))
+    return numerator/denominator
 
 # Fifth Part: Root Finding Fuction of alpha, r when cos, t, and vx are given. Root_Finding(cos, t,vx,R)
 def Root_Finding(cos, t,vx,R = 8.5):
@@ -154,17 +147,17 @@ def dbdmflux_dTx(t,R,Tx,mx):
         l,r,alpha,Flag = Root_Finding(cos,t,vx,R)
         Ev = _Ev(Tx,mx,alpha)
         dEv_dTx = dEvdTx(Tx,mx,alpha)
+        if Tx >= 2*mx/np.tan(alpha)**2:   
+            return 0 
         if(Flag==False):
             return 0
         else:
             return vx *cs *n_chi(r,Rho_0,mx,model_type) *dnv_dEv(r,Ev) *g(alpha,Ev,mx)*dEv_dTx
         
-    result = integrate.quad(j_base,0.99999,1)[0]
-    result += integrate.quad(j_base,0.9999,0.99999)[0]
-    result += integrate.quad(j_base,0.999,0.9999)[0]
-    result += integrate.quad(j_base,0.99,0.999)[0]
-    result += integrate.quad(j_base,0.9,0.99)[0]
-    result += integrate.quad(j_base,0,0.9)[0]
+    result = integrate.quad(j_base,0,0.5)[0]+integrate.quad(j_base,0.5,0.8)[0]+integrate.quad(j_base,0.8,0.9)[0]+integrate.quad(j_base,0.9,0.99)[0]\
+    +integrate.quad(j_base,0.99,0.999)[0]+integrate.quad(j_base,0.999,0.9999)[0]\
+    +integrate.quad(j_base,0.9999,0.99999)[0]+integrate.quad(j_base,0.99999,0.999999)[0]\
+    +integrate.quad(j_base,0.999999,0.9999999)[0]+integrate.quad(j_base,0.9999999,1)[0]
     
     return 2*np.pi*c*tau*result
 
@@ -246,7 +239,7 @@ Tx = 10
 
 if mode=='flux':
     # years
-    yrls=np.logspace(0,4,200)
+    yrls=np.logspace(-4,4,200)
 
     fluxmx1=[]
     for y in yrls:
