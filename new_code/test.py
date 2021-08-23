@@ -42,7 +42,7 @@ def norm_f():
     norm = integrate.quad(f_Ev,0.,1000.)[0]
     print(norm)
     return norm
-def backup(start,end):
+def backup(start,end,mx):
     R = (np.sum((start-end)**2))**0.5
     l = end -start
     beta = 0.3
@@ -65,7 +65,7 @@ def backup(start,end):
             return rho_s/(x*(1+x)**2)
         dn_domega= (sec**3)*(1-beta*beta)/((sec**2-beta**2)**2)/np.pi
 
-        physical_terms = rho(r)*L/r**2*cs/M_DM*dn_domega
+        physical_terms = rho(r)*L/r**2*cs/mx*dn_domega
         return np.sin(psi) *dpsi_dtheta *R/(R**2+r**2-2*R*r*np.cos(psi))*np.cos(theta)*physical_terms
     
     def gl(l,theta): 
@@ -84,7 +84,7 @@ def backup(start,end):
             x = r/R
             return rho_s/(x*(1+x)**2)
 
-        physical_terms = rho(r)*L/r**2*cs/M_DM*dn_domega
+        physical_terms = rho(r)*L/r**2*cs/mx*dn_domega
         return np.sin(theta) *np.cos(theta)/R/np.pi*3/4*physical_terms
     
     def g(r,psi): 
@@ -103,7 +103,7 @@ def backup(start,end):
         if alpha>=np.pi/2 or np.isnan(alpha):
             dn_domega= 0
 
-        physical_terms = rho(r)*L/r**2*cs/M_DM*dn_domega
+        physical_terms = rho(r)*L/r**2*cs/mx*dn_domega
         return np.sin(psi) *r**2/l**2*np.cos(theta)/R /np.pi*3/4*physical_terms
 
     def h(r,alpha): 
@@ -143,7 +143,7 @@ def norm(start,end):
     L_dm = result
     print("Norm:"+str(L_dm))
     return L_dm
-def DM_number(start,end):
+def DM_number(start,end,mx):
     R = (np.sum((start-end)**2))**0.5
     l = end -start
     beta = 0.9
@@ -164,7 +164,7 @@ def DM_number(start,end):
         def rho(r):
             x = r/R
             return rho_s/(x*(1+x)**2)
-        physical_terms = rho(r)*L/r**2*cs/M_DM
+        physical_terms = rho(r)*L/r**2*cs/mx
         return geometric_terms*physical_terms
 
     result =integrate.dblquad(gl, 0, np.pi/2, lambda theta: 0, lambda theta: R*2*np.cos(theta))[0]#*R
@@ -262,7 +262,7 @@ def _Tx(Ev,mx,alpha):
     Tchi = 0.5*Tmax*(1+np.cos(theta_c))
     return Tchi
 
-def dDM_number_dTx(start,end,Tx):
+def dDM_number_dTx(start,end,Tx,mx):
     R = (np.sum((start-end)**2))**0.5
     l = end -start
     
@@ -277,11 +277,11 @@ def dDM_number_dTx(start,end,Tx):
         geometric_terms = np.sin(theta) /R *2*np.pi 
         # Physical terms
         
-        Ev = _Ev(Tx,M_DM,alpha)
+        Ev = _Ev(Tx,mx,alpha)
         if Ev<=0 or np.isnan(Ev):   
             return 0 
-        dn_domega= g(alpha,Ev,M_DM)
-        dEv_dTx = dEvdTx(Tx,M_DM,alpha)
+        dn_domega= g(alpha,Ev,mx)
+        dEv_dTx = dEvdTx(Tx,mx,alpha)
 
         L = n_tot/4/np.pi
         def rho(r):
@@ -362,16 +362,16 @@ if __name__== '__main__':
     end =np.array([8.7*kpc_in_cm,0,0.*3.08567758e18])
     
     nor = norm(start,end)
-    ref = DM_number(start,end)
+    ref = DM_number(start,end,M_DM)
 
-    mode = 'flux'
+    mode = 'accumulated flux'
 
     if mode=='accumulated flux':
         dN_dTx = []
         Tx = np.logspace(-3,1,20)
     
         for y in Tx:
-            dN_dTx.append(dDM_number_dTx(start,end,y))
+            dN_dTx.append(dDM_number_dTx(start,end,y,M_DM))
 
         plt.plot(Tx*1e3,dN_dTx,label='multiple')
         #plt.plot(Tx*1e3,DMnum_single,label='single')
